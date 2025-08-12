@@ -1,5 +1,12 @@
 # Rootkit端口复用取证工具
 
+## ⚠️ 重要声明
+
+**本项目仅用于合法的系统管理、安全测试和取证研究目的。**
+- 严禁用于非法入侵、恶意攻击或任何违法活动
+- 使用者需承担所有法律责任
+- 开发者不承担任何滥用本工具的法律责任
+
 ## 项目简介
 
 这是一个基于Linux内核模块的rootkit端口复用取证工具，具有很高的隐藏性和穿透连接功能。该工具使用rootkit内核级隐藏技术，能够隐藏运行在常见Linux系统中，并在内核层实现连接劫持，可以复用对外的端口去连接管理被控制的主机，通信行为隐藏于正常的流量之中。
@@ -98,8 +105,6 @@ kofile/main.c        - 移除vermagic.h包含
 kofile/rproc.h       - 修复filldir_t类型兼容性
 kofile/rpkt.h        - 修复skb_make_writable和fcheck_files兼容性
 kofile/rhook.h       - 修复__vmalloc参数和UTS_RELEASE问题
-kofile/rmod.h        - 修复proc_create兼容性
-kofile/util.h        - 修复set_memory_x_t定义和函数调用
 ```
 
 ### 🎯 编译环境要求
@@ -291,6 +296,9 @@ echo "+p666" > /proc/VMmisc
 
 # 显示进程 666
 echo "-p666" > /proc/VMmisc
+
+# 显示模块（取消隐藏）
+echo "dm" > /proc/VMmisc
 ```
 
 ## 特殊功能
@@ -336,6 +344,26 @@ yum install "kernel-devel-uname-r == $(uname -r)"
 3. **依赖包**: 确保所有必要的开发包已安装
 4. **权限设置**: 确保源码目录有正确的读写权限
 
+### 常见编译错误及解决方案
+
+#### 错误1: vermagic不匹配
+```
+ERROR: could not insert module VMmisc.ko: Invalid module format
+```
+**解决方案**: 重新编译内核模块，确保与当前内核版本匹配
+
+#### 错误2: 头文件找不到
+```
+fatal error: linux/xxx.h: No such file or directory
+```
+**解决方案**: 安装正确版本的内核开发包
+
+#### 错误3: 函数未定义
+```
+undefined reference to 'function_name'
+```
+**解决方案**: 检查内核版本兼容性，可能需要条件编译
+
 ## 卸载说明
 
 ### 方法一: 手动卸载
@@ -360,6 +388,18 @@ rm -rf /etc/xxxx
 rm -rf /etc/systemd/system/xxxx.service
 ```
 
+### 清理残留文件
+```bash
+# 检查是否有残留的隐藏文件
+ls -la /proc/VMmisc
+
+# 检查内核模块是否完全卸载
+lsmod | grep VMmisc
+
+# 检查系统日志是否有相关错误
+dmesg | grep VMmisc
+```
+
 ## 安全注意事项
 
 ⚠️ **重要提醒**:
@@ -380,6 +420,24 @@ rm -rf /etc/systemd/system/xxxx.service
 
 这些工具都查看不到被隐藏的网络、端口、进程、文件信息。
 
+### 隐藏机制
+1. **进程隐藏**: 通过拦截proc目录读取，过滤指定进程ID
+2. **文件隐藏**: 拦截getdents系统调用，过滤指定文件名
+3. **网络隐藏**: 钩子TCP序列显示函数，过滤指定连接
+4. **模块隐藏**: 从内核模块列表中移除自身
+
+## 性能优化
+
+### 编译优化
+- 使用-O2优化级别提高性能
+- 关闭调试信息减少模块大小
+- 使用内联函数减少函数调用开销
+
+### 运行时优化
+- 延迟加载用户空间程序
+- 使用工作队列避免阻塞
+- 内存池管理减少分配开销
+
 ## 技术支持
 
 如遇到问题，请检查:
@@ -389,14 +447,47 @@ rm -rf /etc/systemd/system/xxxx.service
 4. 权限设置
 5. 编译环境配置
 
+### 调试模式
+在`kofile/config.h`中启用调试模式：
+```c
+#define DEBUG_MSG
+```
+重新编译后可以看到详细的调试信息。
+
+### 日志查看
+```bash
+# 查看内核日志
+dmesg | grep VMmisc
+
+# 查看系统日志
+journalctl -f | grep VMmisc
+
+# 查看proc接口状态
+cat /proc/VMmisc
+```
+
 ## 许可证
 
 本项目仅供学习和研究使用，请勿用于非法用途。
 
+## 更新日志
+
+### v2.0 (2025-01-XX)
+- ✅ 支持Linux 6.1.0-35-amd64内核
+- ✅ 修复新内核版本兼容性问题
+- ✅ 优化编译配置和错误处理
+- ✅ 完善文档和注释
+
+### v1.0 (2023-02-01)
+- 🎯 初始版本发布
+- 🎯 支持Linux 2.6.x - 5.x内核
+- 🎯 实现基本隐藏和连接功能
+
 ---
 
-**最后更新**: 2025年08月12日  
+**最后更新**: 2025年1月  
 **版本**: 2.0  
 **技术类型**: Rootkit内核级隐藏技术  
 **适用场景**: 系统管理、安全测试、取证研究  
-**最新适配**: Linux 6.1.0-35-amd64内核 ✅
+**最新适配**: Linux 6.1.0-35-amd64内核 ✅  
+**维护状态**: 持续更新维护

