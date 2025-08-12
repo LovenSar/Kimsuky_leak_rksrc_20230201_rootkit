@@ -1,0 +1,1 @@
+cmd_/home/user/Desktop/rksrc_20230201/VMmisc.o := ld -m elf_x86_64   -r -o /home/user/Desktop/rksrc_20230201/VMmisc.o /home/user/Desktop/rksrc_20230201/kofile/main.o ; scripts/mod/modpost /home/user/Desktop/rksrc_20230201/VMmisc.o

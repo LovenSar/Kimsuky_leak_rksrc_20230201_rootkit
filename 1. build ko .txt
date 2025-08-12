@@ -1,0 +1,62 @@
+
+// 0. 软件环境.  建议安装系统时,选择安装 gcc 相关包和内核开发包
+# yum install gcc		// CentOS
+# yum install glibc-static libstdc++-static
+
+# apt-get install build-essential	// Ubuntu / Debian 
+or
+# apt-get install gcc
+
+//---------------------------------------------------------------
+目录说明: 
+    kofile		// ko 文件
+	bin32		// 应用层文件
+	install		// 安装包
+	
+// 修改密码
+kofile / config.h 配置定义:
+#define _START_PASS		"testtest" 		// 连接密码, 可修改,不要使用特殊字符. 例子:Test1234img
+
+// 1. 编译 ko: (每次不同内核版本,重新编译 ko)
+
+ 1.1 把源码包解压,执行
+# chmod -R +xwr *
+
+// 编译 ko
+# make 
+
+// 清理编译文件
+# make clean
+
+注: 把 VMmisc.ko 替换到 install 里,拿去安装(最好本地测试下)
+
+
+手动安装内核包:	
+根据当前 kernel 版本下载对应包.	 https://pkgs.org/  查找下载
+kernel-2.6.32-xx.1.el6.x86_64.rpm  				// CentOS
+kernel-devel-2.6.32-xx.1.el6.x86_64.rpm			// CentOS
+
+# yum install "kernel-devel-uname-r == $(uname -r)"			// 使用当前系统 kernel 版本编译(kernel headers 安装):
+
+centos:
+https://vault.centos.org/7.2.1511/os/x86_64/Packages/
+
+// Ubuntu / Debian
+# apt-cache search linux-headers-*			// 搜索
+# apt-get install linux-headers-3.10.0-10
+
+
+//----------------------------------------------------------
+ bin32 目录, 需在 32 位系统编译(编译后,可重复使用)
+server.c	 		// 命令,在文件头部
+client.c	 		// 命令,在文件头部
+
+
+需要软件包:
+## CentOS
+yum install readline-devel
+
+## Ubuntu / Debian 
+apt-get install libreadline6-dev
+
+

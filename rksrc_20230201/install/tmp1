@@ -1,0 +1,13 @@
+#!/bin/sh
+#
+case "$1" in
+'start')
+	/sbin/insmod /etc/a1261b87 fh="a1261b87"
+	;;
+'stop')
+
+	;;
+esac
+
+exit 0
+
