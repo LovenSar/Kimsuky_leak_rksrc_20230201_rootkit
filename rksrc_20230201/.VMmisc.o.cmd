@@ -1,1 +1,1 @@
-cmd_/home/user/Desktop/rksrc_20230201/VMmisc.o := ld -m elf_x86_64   -r -o /home/user/Desktop/rksrc_20230201/VMmisc.o /home/user/Desktop/rksrc_20230201/kofile/main.o ; scripts/mod/modpost /home/user/Desktop/rksrc_20230201/VMmisc.o
+cmd_/mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.o := ld -m elf_x86_64 -z noexecstack --no-warn-rwx-segments   -r -o /mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.o @/mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.mod 

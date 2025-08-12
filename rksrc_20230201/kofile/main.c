@@ -30,7 +30,8 @@
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 30)
 #include <linux/cred.h>
 #endif
-#include <linux/vermagic.h>
+// 移除vermagic.h包含，这个头文件只能在内核模块编译时使用
+// #include <linux/vermagic.h>
 
 #include "config.h"
 #include "rmod.h"

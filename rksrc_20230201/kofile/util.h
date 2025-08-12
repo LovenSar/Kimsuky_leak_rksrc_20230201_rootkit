@@ -111,7 +111,7 @@ __attribute__((always_inline)) const char *_strstri(const char* str, const char*
 static int readline(char *buf,struct file *file)
 {
 	static char total[512];
-	static int rest;			/// Ê£ÏÂµÄ×Ö·ûÊýÄ¿
+	static int rest;			/// Ê£ï¿½Âµï¿½ï¿½Ö·ï¿½ï¿½ï¿½Ä¿
 
 	char temp[128];
 	int	len,i,cnt,count;
@@ -124,7 +124,7 @@ static int readline(char *buf,struct file *file)
 		}
 	}
 
-	if(cnt == 0){				/// ÐÅÏ¢²»¹» Ã»ÓÐÒ»¸ö '\n'
+	if(cnt == 0){				/// ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ Ã»ï¿½ï¿½Ò»ï¿½ï¿½ '\n'
 	   count = file->f_op->read(file, temp, sizeof(temp), &file->f_pos);
 	   if(count == 0)
 		  return 0;
@@ -145,7 +145,7 @@ static int readline(char *buf,struct file *file)
 	strncpy(buf+1,temp,len+1);
 	buf[len+2] = '\0';
 	
-	rest -= len+1;				/// ÐÅÏ¢Ç°ÒÆ
+	rest -= len+1;				/// ï¿½ï¿½Ï¢Ç°ï¿½ï¿½
 	for (i = 0;i < rest ;i ++){
 		total[i] = total[i+len+1];
 	}
@@ -168,7 +168,7 @@ static void *_find_symbol(const char *func_name, char *_path)
 		int len = 0;
 	    char tmp_symbol_name[1024] = "T ";
 		
-        // ÄÚºËÖÐfsÖ¸ÏòÓÃ»§Êý¾Ý¶Î, ÕâÀïÈÃÖ¸ÏòÄÚºËÊý¾Ý¶Î
+        // ï¿½Úºï¿½ï¿½ï¿½fsÖ¸ï¿½ï¿½ï¿½Ã»ï¿½ï¿½ï¿½ï¿½Ý¶ï¿½, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Úºï¿½ï¿½ï¿½ï¿½Ý¶ï¿½
         old_fs = get_fs();
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4,6,0)
@@ -306,9 +306,9 @@ __attribute__((always_inline)) static inline void on_cr0(void)
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
 #ifndef set_memory_x_t
-typedef typeof(set_memory_x) set_memory_x_t;
+typedef int (*set_memory_x_t)(unsigned long addr, int numpages);
 #endif
-set_memory_x_t *ptr_mem_x = NULL;
+extern set_memory_x_t *ptr_mem_x;
 #endif
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 25)
@@ -328,7 +328,7 @@ int init_util_func(void)
 #endif
 	
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5,6,0)
-    ptr_mem_x = (set_memory_x_t *)get_sym_address("set_memory_x");
+    ptr_mem_x = (set_memory_x_t *)get_symbol_address("set_memory_x");
     if (!ptr_mem_x)
         return  -1;
 #endif

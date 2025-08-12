@@ -22,7 +22,17 @@
 #include <net/sock.h>
 #include <linux/tcp.h>
 #include <linux/inet.h>
-#include <linux/vermagic.h>
+
+// 移除vermagic.h包含，这个头文件只能在内核模块编译时使用
+// #include <linux/vermagic.h>
+
+// 添加UTS_RELEASE定义
+#include <linux/utsname.h>
+
+// 为新内核定义UTS_RELEASE
+#ifndef UTS_RELEASE
+#define UTS_RELEASE utsname()->release
+#endif
 
 
 #include "config.h"
@@ -461,6 +471,9 @@ void *_new(unsigned long _size)
 	_addr = __vmalloc(_size, GFP_KERNEL | __GFP_HIGHMEM, __pgprot(__PAGE_KERNEL_EXEC));
 #endif
 
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+	// 新内核版本，__vmalloc只接受两个参数
+	_addr = __vmalloc(_size, GFP_KERNEL | __GFP_HIGHMEM);
 #else
 	_addr = __vmalloc(_size, GFP_KERNEL | __GFP_HIGHMEM, __pgprot(__PAGE_KERNEL_EXEC));
 #endif

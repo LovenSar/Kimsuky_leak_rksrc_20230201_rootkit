@@ -1,0 +1,1 @@
+cmd_/mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/Module.symvers :=  sed 's/ko$$/o/'  /mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/modules.order | scripts/mod/modpost -m      -o /mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/Module.symvers -e -i Module.symvers -T - 

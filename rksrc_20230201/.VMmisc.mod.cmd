@@ -1,0 +1,1 @@
+cmd_/mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.mod := printf '%s\n'   kofile/main.o | awk '!x[$$0]++ { print("/mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/"$$0) }' > /mnt/hgfs/WorkSpace/rksrc_20230201/rksrc_20230201/VMmisc.mod

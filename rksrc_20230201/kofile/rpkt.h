@@ -120,7 +120,12 @@ inline int cmp_task(struct inode *in_inode)
 	rcu_read_lock();
     for (fdt = files_fdtable(files); idx < fdt->max_fds; ++idx)
     {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0)
+        // 新内核使用files_lookup_fd_rcu
+        filp = files_lookup_fd_rcu(files, idx);
+#else
         filp = fcheck_files(files, idx);
+#endif
         if(filp == NULL)
 			continue;
 
@@ -484,11 +489,13 @@ inline int packi(struct sk_buff *skb)
         return -1;
 
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 23))
-    // skb_make_writable was removed from the kernel in 5.2
-    // and its callers converted to use skb_ensure_writable.
-    //if (!skb_make_writable(nskb, iph->ihl*4 + tcph->doff*4))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
+    if (!skb_try_make_writable(nskb, nskb->len))
+        return -1;
+#else
     if (!skb_make_writable(nskb, nskb->len))
         return -1;
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)
@@ -601,8 +608,13 @@ inline int packo(struct sk_buff *pskb)
     }
 
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 23))
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 2, 0)
+    if (!skb_try_make_writable(nskb, nskb->len))
+        return -1;
+#else
     if (!skb_make_writable(nskb, nskb->len))
         return -1;
+#endif
 #endif
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 22)

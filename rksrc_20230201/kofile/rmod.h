@@ -146,6 +146,17 @@ static int proc_path_open(struct inode *inode, struct file *file)
 	return single_open(file, proc_path_show, NULL);
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+// 新内核使用proc_ops
+static const struct proc_ops proc_path_proc_ops = {
+	.proc_open = proc_path_open,
+	.proc_read = seq_read,
+	.proc_write = proc_path_write,
+	.proc_lseek = seq_lseek,
+	.proc_release = single_release,
+};
+#endif
+
 static const struct file_operations proc_path_fops = {
 	.owner = THIS_MODULE,
 	.open = proc_path_open,
@@ -158,7 +169,13 @@ static const struct file_operations proc_path_fops = {
 static struct proc_dir_entry *this_proc;
 int proc_path_init(void)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+	this_proc = proc_create(CTL_PROC_NAME, 0, NULL, &proc_path_proc_ops);
+	if (NULL == this_proc)
+	{
+		return -ENOMEM;
+	}
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3, 9, 0)
 	this_proc = proc_create(CTL_PROC_NAME, 0, NULL, &proc_path_fops);
 	if (NULL == this_proc)
 	{
